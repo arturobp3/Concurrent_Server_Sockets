@@ -1,17 +1,12 @@
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.commons.text.StringEscapeUtils;
 
 import java.io.*;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Scanner;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
 public class ClientHandler implements Runnable {
 
@@ -50,11 +45,11 @@ public class ClientHandler implements Runnable {
      */
     @Override
     public void run() {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
+        try (BufferedInputStream reader = new BufferedInputStream(clientSocket.getInputStream())) {
             String clientInput;
             StringBuilder input = new StringBuilder();
             while (!Thread.interrupted()) {
-                clientInput = reader.readLine();//readInputBuffer(reader, input);
+                clientInput = readInputBuffer(reader, input);
                 if (clientInput != null) {
                     if (TERMINATE_KEYWORD.equals(clientInput)) {
                         System.out.println("Found 'terminate' keyword");

@@ -8,12 +8,8 @@ public class Server {
 
     private static final int DEFAULT_MAX_CLIENTS = 5;
     private static final int DEFAULT_PORT_NUMBER = 4000;
-    private static final int NUM_ADDITIONAL_TASKS = 1; // Tasks to be added to thread pool besides client's threads
-
-    private final int numThreads;
     private final int portNumber;
     private final int maxClients;
-    private final int numLogsHandlerThreads;
 
     private ServerSocket serverSocket;
     private ThreadPoolExecutor threadPool;
@@ -27,8 +23,6 @@ public class Server {
      */
     public Server() {
         maxClients = DEFAULT_MAX_CLIENTS;
-        numLogsHandlerThreads = NUM_ADDITIONAL_TASKS;
-        numThreads = maxClients + numLogsHandlerThreads;
         portNumber = DEFAULT_PORT_NUMBER;
         commonInitialization();
     }
@@ -41,8 +35,6 @@ public class Server {
      */
     public Server(int portNumber, int maxClients) {
         this.maxClients = maxClients;
-        numLogsHandlerThreads = NUM_ADDITIONAL_TASKS;
-        this.numThreads = maxClients + numLogsHandlerThreads;
         this.portNumber = portNumber;
         commonInitialization();
     }
@@ -54,7 +46,7 @@ public class Server {
         clientInputsQueue = new LinkedBlockingQueue<>();
         serverAccess = new Semaphore(maxClients);
         logFileTask = new LogFileTask(clientInputsQueue);
-        threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(numThreads);
+        threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(maxClients);
     }
 
     /**

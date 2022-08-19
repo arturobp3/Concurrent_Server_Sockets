@@ -3,12 +3,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.BitSet;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Logger;
 
 public class LogFileTask {
 
