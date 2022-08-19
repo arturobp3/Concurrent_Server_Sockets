@@ -50,11 +50,11 @@ public class ClientHandler implements Runnable {
      */
     @Override
     public void run() {
-        try (BufferedInputStream reader = new BufferedInputStream(clientSocket.getInputStream())) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
             String clientInput;
             StringBuilder input = new StringBuilder();
             while (!Thread.interrupted()) {
-                clientInput = readInputBuffer(reader, input);
+                clientInput = reader.readLine();//readInputBuffer(reader, input);
                 if (clientInput != null) {
                     if (TERMINATE_KEYWORD.equals(clientInput)) {
                         System.out.println("Found 'terminate' keyword");
@@ -64,7 +64,11 @@ public class ClientHandler implements Runnable {
                         Thread.currentThread().interrupt();
                         clientSocket.close();
                     } else {
-                        clientInputsQueue.add(Utils.stripLeadingZeros(clientInput));
+                        try {
+                            clientInputsQueue.add(Utils.stripLeadingZeros(clientInput));
+                        } catch (NumberFormatException e) {
+                            System.out.println("The number couldn't be processed. " + e.getMessage());
+                        }
                     }
                     input = new StringBuilder();
                 }

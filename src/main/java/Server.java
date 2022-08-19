@@ -1,11 +1,7 @@
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.*;
-import java.util.logging.Logger;
 
 
 public class Server {
@@ -81,7 +77,7 @@ public class Server {
             // InterruptedException is thrown when there are clients waiting on the semaphore, and the thread has been interrupted
             // IOException for the create and accept methods of the socket
         } catch (InterruptedException | IOException e) {
-            if (!serverSocket.isClosed()) {
+            if (serverSocket != null && !serverSocket.isClosed()) {
                 System.out.println("Unexpected error: " + e.getMessage());
             }
         } finally {

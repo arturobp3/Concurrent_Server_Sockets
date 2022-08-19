@@ -1,3 +1,4 @@
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,7 +27,7 @@ public class ServerTest {
     }
 
     @Test
-    public void testNumClientsAndPort() {
+    public void testNumClientsAndPort() throws InterruptedException {
         int maxClients;
         int portNumber;
         maxClients = server.getMaxClients();
@@ -36,38 +37,26 @@ public class ServerTest {
     }
 
     @Test
+    public void testAcceptsTerminate() throws IOException, InterruptedException {
+        Socket clientSocket = new Socket(InetAddress.getLocalHost(), 4000);
+        OutputStream output = clientSocket.getOutputStream();
+        PrintWriter writer = new PrintWriter(output, true);
+        writer.println("terminate");
+        Thread.sleep(30000); //waits for 30 seconds for server to shut down
+        Assert.assertTrue(server.getServerSocket().isClosed());
+        Assert.assertTrue(server.getThreadPool().isTerminated());
+    }
+
+    @Test
     public void testAcceptsNineDigits() throws IOException, InterruptedException {
         Socket clientSocket = new Socket(InetAddress.getLocalHost(), 4000);
         OutputStream output = clientSocket.getOutputStream();
         PrintWriter writer = new PrintWriter(output, true);
         writer.println("012345678");
         Thread.sleep(5000);
-        Assert.assertFalse(server.getServerSocket().isClosed());
         Assert.assertFalse(clientSocket.isClosed());
     }
 
-    @Test
-    public void testAcceptsTerminate() throws IOException, InterruptedException {
-        Socket clientSocket = new Socket(InetAddress.getLocalHost(), 4000);
-        Socket clientSocket2 = new Socket(InetAddress.getLocalHost(), 4000);
-        OutputStream output = clientSocket.getOutputStream();
-        PrintWriter writer = new PrintWriter(output, true);
-        writer.println("terminate");
-        Thread.sleep(30000); //waits for 30 seconds for server to be shutdown
-        Assert.assertTrue(server.getServerSocket().isClosed());
-        Assert.assertTrue(server.getThreadPool().isTerminated());
-    }
-
-    @Test
-    public void testServerReceiveAShorterNumber() throws IOException, InterruptedException {
-        Assert.assertEquals(4, server.getServerAccess().availablePermits());
-        Socket clientSocket = new Socket(InetAddress.getLocalHost(), 4000);
-        OutputStream output = clientSocket.getOutputStream();
-        PrintWriter writer = new PrintWriter(output, true);
-        writer.println("0123");
-        Thread.sleep(5000);
-        Assert.assertEquals(4, server.getServerAccess().availablePermits());
-    }
 
     @Test
     public void testServerReceivedARandomString() throws IOException, InterruptedException {
@@ -90,7 +79,9 @@ public class ServerTest {
             writer.println(String.format("%09d", i));
         }
         Date endTime = new Date();
+        writer.println("terminate");
         System.out.println("Milliseconds: " + (double)((endTime.getTime() - startTime.getTime())));
     }
+
 }
 
