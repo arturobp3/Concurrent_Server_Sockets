@@ -81,7 +81,7 @@ public class ServerTest {
     }
 
     @Test
-    public void testThroughput() throws IOException, InterruptedException {
+    public void testThroughput() throws IOException {
         Socket clientSocket = new Socket(InetAddress.getLocalHost(), 4000);
         OutputStream output = clientSocket.getOutputStream();
         PrintWriter writer = new PrintWriter(output, true);

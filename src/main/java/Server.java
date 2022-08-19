@@ -1,15 +1,15 @@
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 
 public class Server {
 
-    private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
     private static final int DEFAULT_MAX_CLIENTS = 5;
     private static final int DEFAULT_PORT_NUMBER = 4000;
     private static final int NUM_ADDITIONAL_TASKS = 1; // Tasks to be added to thread pool besides client's threads
@@ -23,7 +23,7 @@ public class Server {
     private ThreadPoolExecutor threadPool;
     private BlockingQueue<String> clientInputsQueue;
     private Semaphore serverAccess;
-    private LogFileHandler logFileHandler;
+    private LogFileTask logFileTask;
 
 
     /**
@@ -57,7 +57,7 @@ public class Server {
     private void commonInitialization() {
         clientInputsQueue = new LinkedBlockingQueue<>();
         serverAccess = new Semaphore(maxClients);
-        logFileHandler = new LogFileHandler(clientInputsQueue);
+        logFileTask = new LogFileTask(clientInputsQueue);
         threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(numThreads);
     }
 
@@ -66,20 +66,15 @@ public class Server {
      * semaphore and a thread pool to keep the desired concurrent clients running.
      */
     public void run() {
-        LOGGER.info("Initializing server");
         try {
             serverSocket = new ServerSocket(portNumber);
-            LOGGER.info("Add logFileHandlers to thread pool");
-            for (int i = 0; i < numLogsHandlerThreads; i++) {
-                threadPool.submit(logFileHandler);
-            }
+            logFileTask.run();
 
             while (!Thread.interrupted()) {
-                LOGGER.info("Waiting for clients...");
                 serverAccess.acquire();
                 Socket clientSocket = serverSocket.accept();
 
-                LOGGER.info("Connected client: " + clientSocket.getInetAddress());
+                System.out.println("Connected client: " + clientSocket.getInetAddress());
 
                 threadPool.execute(new ClientHandler(clientSocket, serverSocket, threadPool, clientInputsQueue, serverAccess));
             }
@@ -87,12 +82,13 @@ public class Server {
             // IOException for the create and accept methods of the socket
         } catch (InterruptedException | IOException e) {
             if (!serverSocket.isClosed()) {
-                LOGGER.severe("Unexpected error: " + e.getMessage());
+                System.out.println("Unexpected error: " + e.getMessage());
             }
         } finally {
-            LOGGER.info("Thread pool is shutdown: " + threadPool.isShutdown());
-            LOGGER.info("Thread pool is terminated: " + threadPool.isTerminated());
-            LOGGER.info("Thread pool is terminating: " + threadPool.isTerminating());
+            logFileTask.close();
+            System.out.println("Server is shutdown: " + threadPool.isShutdown());
+            System.out.println("Server is terminated: " + threadPool.isTerminated());
+            System.out.println("Server is terminating: " + threadPool.isTerminating());
         }
     }
 
@@ -122,13 +118,6 @@ public class Server {
      */
     public ThreadPoolExecutor getThreadPool() {
         return threadPool;
-    }
-
-    /**
-     * Get clientInputsQueue
-     */
-    public BlockingQueue<String> getClientInputsQueue() {
-        return clientInputsQueue;
     }
 
     /**

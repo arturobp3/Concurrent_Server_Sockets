@@ -1,4 +1,5 @@
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.logging.Log;
 
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -12,17 +13,17 @@ public class Utils {
 
     /* The following method shuts down an ExecutorService in two phases, first by calling shutdown to reject incoming tasks,
         and then calling shutdownNow, if necessary, to cancel any lingering tasks. Ref: Oracle docs */
-    public static void shutdownAndAwaitTermination(ThreadPoolExecutor pool, Integer shutdownTimeoutSeconds, Logger logger) {
-        logger.info("Shutting down thread pool");
+    public static void shutdownAndAwaitTermination(ThreadPoolExecutor pool, Integer shutdownTimeoutSeconds) {
+        System.out.println("Shutting down thread pool");
         pool.shutdown();
         try {
-            logger.info("Waiting for existing tasks to terminate");
+            System.out.println("Waiting for existing tasks to terminate");
             if (!pool.awaitTermination(shutdownTimeoutSeconds, TimeUnit.SECONDS)) {
                 pool.shutdownNow();
 
-                logger.info("Waiting for tasks to respond to being cancelled");
+                System.out.println("Waiting for tasks to respond to being cancelled");
                 if (!pool.awaitTermination(shutdownTimeoutSeconds, TimeUnit.SECONDS)) {
-                    logger.warning("Pool did not terminate");
+                    System.out.println("Pool did not terminate");
                 }
             }
         } catch (InterruptedException ie) {

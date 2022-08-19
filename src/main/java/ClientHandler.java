@@ -15,7 +15,6 @@ import java.util.regex.Pattern;
 
 public class ClientHandler implements Runnable {
 
-    private static final Logger LOGGER = Logger.getLogger(ClientHandler.class.getName());
     private static final int SHUTDOWN_TIMEOUT = 20;
     private static final int DIGITS_INPUT_SIZE = 9;
     private static final String TERMINATE_KEYWORD = "terminate";
@@ -51,8 +50,6 @@ public class ClientHandler implements Runnable {
      */
     @Override
     public void run() {
-        LOGGER.info("Processing a new client on " + Thread.currentThread().getName() );
-        LOGGER.info("Thread pool active count: " + threadPool.getActiveCount());
         try (BufferedInputStream reader = new BufferedInputStream(clientSocket.getInputStream())) {
             String clientInput;
             StringBuilder input = new StringBuilder();
@@ -60,23 +57,22 @@ public class ClientHandler implements Runnable {
                 clientInput = readInputBuffer(reader, input);
                 if (clientInput != null) {
                     if (TERMINATE_KEYWORD.equals(clientInput)) {
-                        LOGGER.info("Found 'terminate' keyword");
-                        Utils.shutdownAndAwaitTermination(threadPool, SHUTDOWN_TIMEOUT, LOGGER);
+                        System.out.println("Found 'terminate' keyword");
+                        Utils.shutdownAndAwaitTermination(threadPool, SHUTDOWN_TIMEOUT);
                         serverSocket.close();
                     } else if (!isClientInputValid(clientInput)) {
                         Thread.currentThread().interrupt();
                         clientSocket.close();
                     } else {
-                        LOGGER.info("Sending input to be processed");
                         clientInputsQueue.add(Utils.stripLeadingZeros(clientInput));
                     }
                     input = new StringBuilder();
                 }
             }
         } catch (IOException e) {
-            LOGGER.severe("Error while managing the client running on " + Thread.currentThread().getName() + ": " + e.getMessage());
+            System.out.println("Exception while managing the client running on " + Thread.currentThread().getName() + ": " + e.getMessage());
         } finally {
-            LOGGER.info("Releasing access to the server");
+            System.out.println("Releasing access to the server");
             serverAccess.release();
         }
     }
@@ -121,31 +117,4 @@ public class ClientHandler implements Runnable {
                 && NumberUtils.isDigits(clientInput)
                 && Integer.parseInt(clientInput) >= 0;
     }
-
-
-    //TODO: borrar esto
-/*
-    public static void main(String[] args) throws IOException, InterruptedException {
-        InetAddress host = InetAddress.getLocalHost();
-        Socket clientSocket = new Socket(host.getHostAddress(), 4000);
-        Socket clientSocket2 = new Socket(host.getHostAddress(), 4000);
-        OutputStream output = clientSocket.getOutputStream();
-        PrintWriter writer = new PrintWriter(output, true);
-
-        Scanner teclado = new Scanner(System.in);
-        String text = "";
-
-        while (!"terminate".equals(text)) {
-            text = teclado.nextLine();
-            writer.println(text);
-        }
-
-        clientSocket.close();
-        clientSocket2.close();
-        output.close();
-        writer.close();
-        teclado.close();
-    }*/
-
-
 }
