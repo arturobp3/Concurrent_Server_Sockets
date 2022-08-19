@@ -6,6 +6,8 @@ import java.util.BitSet;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
@@ -15,7 +17,7 @@ public class LogFileHandler implements Runnable {
     private static final Logger LOGGER = Logger.getLogger(LogFileHandler.class.getName());
     private static final String LOGS_FILE_NAME = "numbers.log";
     private static final Integer MAX_NUM_UNIQUE_INPUTS = 1_000_000_000;
-    private static final Integer TEN_SECONDS_IN_MILLISECONDS = 5_000; //TODO: CAMBIAR A 10
+    private static final Integer TEN_SECONDS_IN_MILLISECONDS = 10_000;
     private final Lock lock;
     private final Timer timer;
     private final BlockingQueue<String> clientInputsQueue;
@@ -24,6 +26,11 @@ public class LogFileHandler implements Runnable {
     private Integer uniqueNumbersTotal;
     private Integer duplicatedNumbers;
 
+    /**
+     * Constructor to create an object which is responsible for handling the logic related to the saving of logs.
+     * It also starts a timer that logs stats related to the information that must be saved.
+     * @param clientInputsQueue BlockingQueue which contains the information to be saved in the log file
+     */
     public LogFileHandler(BlockingQueue<String> clientInputsQueue) {
         deleteFileIfExists();
         this.clientInputsQueue = clientInputsQueue;
@@ -36,6 +43,10 @@ public class LogFileHandler implements Runnable {
         timer.scheduleAtFixedRate(new ReportTimerTask(), TEN_SECONDS_IN_MILLISECONDS, TEN_SECONDS_IN_MILLISECONDS);
     }
 
+    /**
+     * It handles the execution of saving logs and logging stats about these savings. It uses a lock to avoid race conditions
+     * when generating the stats about the received numbers.
+     */
     @Override
     public void run() {
         try (FileWriter fileWriter = new FileWriter(LOGS_FILE_NAME, true);
@@ -51,7 +62,13 @@ public class LogFileHandler implements Runnable {
                         uniqueNumbers++;
                         uniqueNumbersTotal++;
                         receivedNumbers.set(Integer.parseInt(number));
-                        bufferedWriter.write(number);
+                        try {
+                            bufferedWriter.write(number);
+                        } catch (IOException e) {
+                            LOGGER.warning("There was an error while writing in the file. A number is going to be queued again");
+                            clientInputsQueue.add(number);
+                            continue;
+                        }
                         bufferedWriter.newLine();
                         bufferedWriter.flush();
                         LOGGER.info("A number has been written in log file");
@@ -67,6 +84,9 @@ public class LogFileHandler implements Runnable {
         }
     }
 
+    /**
+     * Method that checks if the file 'numbers.log' exists, and deletes it if so.
+     */
     private void deleteFileIfExists() {
         File file = new File(LOGS_FILE_NAME);
         if (file.exists()) {
@@ -78,8 +98,11 @@ public class LogFileHandler implements Runnable {
         }
     }
 
-
     final class ReportTimerTask extends TimerTask {
+
+        /**
+         * It runs a method which logs stats about the numbers received by the clients. It uses a lock to avoid race conditions.
+         */
         @Override
         public void run() {
             synchronized (lock) {

@@ -16,8 +16,8 @@ import java.util.regex.Pattern;
 public class ClientHandler implements Runnable {
 
     private static final Logger LOGGER = Logger.getLogger(ClientHandler.class.getName());
-    private static final int SHUTDOWN_TIMEOUT = 30; //TODO: CAMBIAR A 60
-    private static final int DIGITS_INPUT_SIZE = 4; //TODO: CAMBIAR A 9
+    private static final int SHUTDOWN_TIMEOUT = 20;
+    private static final int DIGITS_INPUT_SIZE = 9;
     private static final String TERMINATE_KEYWORD = "terminate";
 
     private final Socket clientSocket;
@@ -27,6 +27,14 @@ public class ClientHandler implements Runnable {
     private final Semaphore serverAccess;
 
 
+    /**
+     * Constructor to create an object which is responsible for handling the logic related to a client's connection
+     * @param clientSocket Client Socket obtained when it connects to the server
+     * @param serverSocket Server Socket instance
+     * @param threadPool Thread pool which contains all clients running on different threads
+     * @param clientInputsQueue BlockingQueue to add all numbers which meet the conditions to be saved in the file
+     * @param serverAccess Semaphore to be used when a permit must be released.
+     */
     public ClientHandler(Socket clientSocket, ServerSocket serverSocket, ThreadPoolExecutor threadPool,
                          BlockingQueue<String> clientInputsQueue, Semaphore serverAccess) {
         this.clientSocket = clientSocket;
@@ -36,6 +44,11 @@ public class ClientHandler implements Runnable {
         this.serverAccess = serverAccess;
     }
 
+    /**
+     * It handles the execution of a client. It uses a BufferedInputStream which allows to read the client's input
+     * asynchronously, by using a buffer, and analyse the input to decide whether to add it to the queue or disconnect
+     * all or one client.
+     */
     @Override
     public void run() {
         LOGGER.info("Processing a new client on " + Thread.currentThread().getName() );
@@ -47,12 +60,10 @@ public class ClientHandler implements Runnable {
                 clientInput = readInputBuffer(reader, input);
                 if (clientInput != null) {
                     if (TERMINATE_KEYWORD.equals(clientInput)) {
-                        //TODO: que pasa si termina y hay elementos en la cola esperando que no han podido entrar al servidor
                         LOGGER.info("Found 'terminate' keyword");
                         Utils.shutdownAndAwaitTermination(threadPool, SHUTDOWN_TIMEOUT, LOGGER);
                         serverSocket.close();
                     } else if (!isClientInputValid(clientInput)) {
-                        //TODO: lanzar socketException??
                         Thread.currentThread().interrupt();
                         clientSocket.close();
                     } else {
@@ -70,10 +81,17 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /**
+     * Method that reads the client's input via a BufferedInputStream and stores every single character read in
+     * the StringBuilder variable
+     * @param bufferedInputStream BufferedInputStream to read the client's input asynchronously
+     * @param stringBuilder StringBuilder to let the method handle the string efficiently
+     * @return It returns a Null when the client hasn't introduced a line separator character, and the concrete String
+     * when the line separator character is recognized
+     */
     private String readInputBuffer(BufferedInputStream bufferedInputStream, StringBuilder stringBuilder) throws IOException {
         boolean inputFound = false;
 
-        // read until a single byte is available
         while(bufferedInputStream.available() > 0 && !inputFound) {
             char c = (char) bufferedInputStream.read();
             if (c == '\b') {
@@ -91,14 +109,21 @@ public class ClientHandler implements Runnable {
         return null;
     }
 
+    /**
+     * Check if the string clientInput is a valid input. It takes into account the size of the string, if they are digits
+     * and if it's 0 or a positive number
+     * @param clientInput Input introduced by the client
+     * @return True if valid, false otherwise
+     */
     private boolean isClientInputValid(String clientInput) {
         return clientInput != null
                 && clientInput.length() == DIGITS_INPUT_SIZE
                 && NumberUtils.isDigits(clientInput)
-                && Integer.parseInt(clientInput) > 0;
+                && Integer.parseInt(clientInput) >= 0;
     }
 
 
+    //TODO: borrar esto
 /*
     public static void main(String[] args) throws IOException, InterruptedException {
         InetAddress host = InetAddress.getLocalHost();

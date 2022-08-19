@@ -3,8 +3,6 @@ import org.apache.commons.lang3.math.NumberUtils;
 public class Application {
 
     public static void main(String[] args) {
-        //TODO: Comentar todas las funciones del codigo
-
         Server server;
         if (args.length == NumberUtils.INTEGER_ZERO) {
             server = new Server();
