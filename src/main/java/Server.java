@@ -6,10 +6,10 @@ import java.util.concurrent.*;
 
 public class Server {
 
-    private static final int DEFAULT_MAX_CLIENTS = 5;
-    private static final int DEFAULT_PORT_NUMBER = 4000;
-    private final int portNumber;
-    private final int maxClients;
+    private static final Integer DEFAULT_MAX_CLIENTS = 5;
+    private static final Integer DEFAULT_PORT_NUMBER = 4000;
+    private final Integer portNumber;
+    private final Integer maxClients;
 
     private ServerSocket serverSocket;
     private ThreadPoolExecutor threadPool;

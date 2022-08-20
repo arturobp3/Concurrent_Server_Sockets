@@ -74,9 +74,14 @@ public class ServerTest {
         Socket clientSocket = new Socket(InetAddress.getLocalHost(), 4000);
         OutputStream output = clientSocket.getOutputStream();
         PrintWriter writer = new PrintWriter(output, true);
+
+        Socket clientSocket2 = new Socket(InetAddress.getLocalHost(), 4000);
+        OutputStream output2 = clientSocket2.getOutputStream();
+        PrintWriter writer2 = new PrintWriter(output2, true);
         Date startTime = new Date();
         for (int i = 0; i < 2_000_000; i++) {
             writer.println(String.format("%09d", i));
+            writer2.println(String.format("%09d", i));
         }
         Date endTime = new Date();
         writer.println("terminate");
